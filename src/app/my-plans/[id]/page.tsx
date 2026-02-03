@@ -247,13 +247,13 @@ export default function PlanDetailPage() {
   const sortableIds = orderedPlaces.map((_, i) => `place-${i}`);
 
   return (
-    <main className="min-h-screen bg-background pb-24">
-      {/* Fixed small map at top – markers follow place order */}
-      <div className="sticky top-0 z-0">
-        <NaverMapCompact places={placesForMap} />
+    <main className="min-h-screen relative pb-24">
+      {/* Full-screen fixed map background (behind content) */}
+      <div className="fixed inset-0 w-[100vw] h-[100vh] z-[-1]">
+        <NaverMapCompact places={placesForMap} variant="background" />
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6 -mt-2 relative z-10 bg-background rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+      <div className="relative z-10 max-w-lg mx-auto px-4 py-6 pt-8 bg-white/80 backdrop-blur-sm min-h-[50vh] rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
         {/* Header */}
         <Link
           href="/my-plans"
@@ -305,7 +305,18 @@ export default function PlanDetailPage() {
                         subtitle={`From ${place} to ${orderedPlaces[index + 1]}`}
                         defaultOpen={false}
                       >
-                        <PathDetailsContent />
+                        <PathDetailsContent
+                          fromCoord={
+                            placesForMap[index]?.lat != null && placesForMap[index]?.lng != null
+                              ? { lat: placesForMap[index].lat!, lng: placesForMap[index].lng! }
+                              : undefined
+                          }
+                          toCoord={
+                            placesForMap[index + 1]?.lat != null && placesForMap[index + 1]?.lng != null
+                              ? { lat: placesForMap[index + 1].lat!, lng: placesForMap[index + 1].lng! }
+                              : undefined
+                          }
+                        />
                       </PathDetailsAccordion>
                     </div>
                   )}

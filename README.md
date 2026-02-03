@@ -41,7 +41,7 @@ npm install
 
 ```
 NEXT_PUBLIC_NAVER_MAP_CLIENT_ID=your_client_id
-NAVER_MAP_CLIENT_SECRET=your_secret   # optional, for server-side API only
+NAVER_MAP_CLIENT_SECRET=your_secret   # required for Directions 5 API (실시간 경로 안내)
 ```
 
 ### 3. Run development server

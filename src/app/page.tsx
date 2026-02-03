@@ -13,18 +13,26 @@ export default function Home() {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="max-w-lg mx-auto px-5 py-8 pb-28 space-y-10">
-        <Header />
+    <main className="min-h-screen relative">
+      {/* Full-screen fixed map background (behind content) */}
+      <div className="fixed inset-0 w-[100vw] h-[100vh] z-[-1]">
+        <NaverMap variant="background" />
+      </div>
 
-        {/* Always visible - helps identify which server instance is running */}
-        <VersionInfo />
+      <div className="relative z-10 max-w-lg mx-auto px-5 py-8 pb-28 space-y-10">
+        <div className="rounded-2xl bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+          <Header />
+        </div>
+
+        <div className="rounded-2xl bg-white/80 backdrop-blur-sm p-4 shadow-sm">
+          <VersionInfo />
+        </div>
 
         <HeroSection onStartPlanning={() => setIsPlanModalOpen(true)} />
 
-        <NaverMap />
-
-        <TrendingNow />
+        <div className="rounded-2xl bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+          <TrendingNow />
+        </div>
       </div>
 
       <EmergencyFAB />

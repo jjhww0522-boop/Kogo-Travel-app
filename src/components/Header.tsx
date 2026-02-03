@@ -15,7 +15,7 @@ export default function Header() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-2xl bg-gradient-to-br from-modern-mint/20 to-modern-mint/5 p-5 border border-modern-mint/20">
+        <div className="rounded-2xl bg-white/60 backdrop-blur-sm bg-gradient-to-br from-modern-mint/20 to-modern-mint/5 p-5 border border-modern-mint/20">
           <div className="flex items-center gap-2 mb-2">
             <Cloud size={20} className="text-modern-mint-dark" />
             <span className="text-sm font-medium text-gray-700">Seoul Weather</span>

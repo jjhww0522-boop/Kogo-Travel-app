@@ -8,7 +8,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ onStartPlanning }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-modern-mint via-modern-mint-light to-modern-mint-dark p-10 text-white shadow-lg">
+    <section className="relative overflow-hidden rounded-3xl backdrop-blur-sm bg-gradient-to-br from-modern-mint/85 via-modern-mint-light/85 to-modern-mint-dark/85 p-10 text-white shadow-lg">
       <div className="absolute top-4 right-4 opacity-20">
         <Sparkles size={48} />
       </div>

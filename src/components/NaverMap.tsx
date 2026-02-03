@@ -12,7 +12,12 @@ declare global {
 
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.978 };
 
-export default function NaverMap() {
+interface NaverMapProps {
+  /** 'background' = 지도만 부모 영역 가득 채움 (전체 화면 배경용) */
+  variant?: "card" | "background";
+}
+
+export default function NaverMap({ variant = "card" }: NaverMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
 
@@ -92,6 +97,20 @@ export default function NaverMap() {
 
   const clientId = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID;
   const hasValidKey = clientId && clientId !== "your_client_id_here";
+
+  if (variant === "background") {
+    return (
+      <div className="absolute inset-0 w-full h-full">
+        {hasValidKey ? (
+          <div ref={mapRef} className="w-full h-full bg-surface-muted" />
+        ) : (
+          <div className="w-full h-full bg-surface-muted flex items-center justify-center">
+            <MapPin size={48} className="text-modern-mint/50" />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <section className="relative z-0">

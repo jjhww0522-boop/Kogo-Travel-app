@@ -20,9 +20,11 @@ export interface PlaceForMap {
 interface NaverMapCompactProps {
   /** Ordered list of places; markers shown in this order (1, 2, 3...). When empty/undefined, single Seoul marker. */
   places?: PlaceForMap[];
+  /** 'background' = 지도만 부모 영역 가득 채움 (전체 화면 배경용) */
+  variant?: "card" | "background";
 }
 
-export default function NaverMapCompact({ places = [] }: NaverMapCompactProps) {
+export default function NaverMapCompact({ places = [], variant = "card" }: NaverMapCompactProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -123,6 +125,20 @@ export default function NaverMapCompact({ places = [] }: NaverMapCompactProps) {
 
   const hasKey = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID &&
     process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID !== "your_client_id_here";
+
+  if (variant === "background") {
+    return (
+      <div className="absolute inset-0 w-full h-full">
+        {hasKey ? (
+          <div ref={mapRef} className="w-full h-full bg-surface-muted" />
+        ) : (
+          <div className="w-full h-full bg-surface-muted flex items-center justify-center">
+            <MapPin size={28} className="text-modern-mint/50" />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="relative z-0 w-full rounded-b-2xl overflow-hidden border-b border-modern-mint/20 bg-surface-muted shadow-sm">

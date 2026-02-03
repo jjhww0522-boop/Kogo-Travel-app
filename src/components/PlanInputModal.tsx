@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DatePicker, { registerLocale, setDefaultLocale } from "react-datepicker";
 import { enUS } from "date-fns/locale";
@@ -52,6 +52,7 @@ import {
   type Destination,
   type DayCourse,
 } from "@/lib/planStorage";
+import type { LocalSearchItem } from "@/lib/naverMap";
 
 registerLocale("en", enUS);
 setDefaultLocale("en");
@@ -133,6 +134,11 @@ export default function PlanInputModal({ isOpen, onClose, initialPlan = null, on
   const router = useRouter();
   const [formData, setFormData] = useState(defaultForm);
   const [manualPlaceInput, setManualPlaceInput] = useState("");
+  const [searchResults, setSearchResults] = useState<LocalSearchItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [locationValidationMessage, setLocationValidationMessage] = useState<string | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [finalDestinations, setFinalDestinations] = useState<Destination[]>([]);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -171,6 +177,32 @@ export default function PlanInputModal({ isOpen, onClose, initialPlan = null, on
     );
   }, [finalDestinations, formData.travelStart, formData.travelEnd, formData.travelPace, arrivalTime]);
 
+  // 네이버 지역 검색: 입력 시 실시간 검색 (디바운스)
+  useEffect(() => {
+    const q = manualPlaceInput.trim();
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    if (!q) {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchLoading(true);
+      setSearchResults([]);
+      fetch(`/api/search/local?query=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data: { items?: LocalSearchItem[] }) => {
+          setSearchResults(data.items ?? []);
+          setShowSearchDropdown(true);
+        })
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [manualPlaceInput]);
+
   const toggleAi = (id: string) => {
     const rec = aiRecommendations.find((r) => r.id === id);
     if (!rec) return;
@@ -184,15 +216,30 @@ export default function PlanInputModal({ isOpen, onClose, initialPlan = null, on
     }
   };
 
-  const addManualPlace = () => {
-    const name = manualPlaceInput.trim();
-    if (!name) return;
+  /** 검색 결과 중 하나를 클릭했을 때만 목적지로 추가 (title + lat/lng) */
+  const addPlaceFromSearch = useCallback((item: LocalSearchItem) => {
     setFinalDestinations((prev) => [
       ...prev,
-      { id: `manual_${Date.now()}_${name}`, name, source: "manual" },
+      {
+        id: `manual_${Date.now()}_${item.title}`,
+        name: item.title,
+        lat: item.lat,
+        lng: item.lng,
+        source: "manual",
+      },
     ]);
     setManualPlaceInput("");
-  };
+    setSearchResults([]);
+    setShowSearchDropdown(false);
+    setLocationValidationMessage(null);
+  }, []);
+
+  /** 검색 결과에 없는 장소를 강제로 넣으려 할 때 경고 */
+  const showLocationValidation = useCallback(() => {
+    if (manualPlaceInput.trim()) {
+      setLocationValidationMessage("Please select a valid location from the search results");
+    }
+  }, [manualPlaceInput]);
 
   const removeFromFinalList = (id: string) => {
     setFinalDestinations((prev) => prev.filter((d) => d.id !== id));
@@ -246,6 +293,9 @@ export default function PlanInputModal({ isOpen, onClose, initialPlan = null, on
       setFormData(defaultForm);
       setFinalDestinations([]);
       setManualPlaceInput("");
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      setLocationValidationMessage(null);
       setExpandedDays(new Set([0]));
     }
   }, [isOpen, initialPlan]);
@@ -433,29 +483,62 @@ export default function PlanInputModal({ isOpen, onClose, initialPlan = null, on
             </div>
           </div>
 
-          {/* Manual Place Input */}
-          <div>
+          {/* Manual Place Input: 네이버 지역 검색 연동, 검색 결과 중 선택 시에만 추가 */}
+          <div className="relative">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
               <MapPin size={18} className="text-modern-mint" />
               Manual Input
             </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="e.g. Gyeongbokgung Palace"
-                value={manualPlaceInput}
-                onChange={(e) => setManualPlaceInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addManualPlace())}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-modern-mint focus:ring-2 focus:ring-modern-mint/20 outline-none transition-all"
-              />
-              <button
-                type="button"
-                onClick={addManualPlace}
-                className="px-4 py-3 rounded-xl bg-modern-mint text-white font-medium hover:bg-modern-mint-dark transition-colors shrink-0"
-              >
-                Add
-              </button>
-            </div>
+            <input
+              type="text"
+              placeholder="Search for a place (e.g. Gyeongbokgung Palace)"
+              value={manualPlaceInput}
+              onChange={(e) => {
+                setManualPlaceInput(e.target.value);
+                setLocationValidationMessage(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  showLocationValidation();
+                }
+              }}
+              onFocus={() => searchResults.length > 0 && setShowSearchDropdown(true)}
+              onBlur={() => setTimeout(() => setShowSearchDropdown(false), 180)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-modern-mint focus:ring-2 focus:ring-modern-mint/20 outline-none transition-all"
+            />
+            {searchLoading && (
+              <p className="mt-1 text-xs text-gray-500">Searching...</p>
+            )}
+            {showSearchDropdown && searchResults.length > 0 && (
+              <ul className="absolute z-[1002] mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg max-h-56 overflow-y-auto">
+                {searchResults.map((item, i) => (
+                  <li key={`${item.title}-${i}`}>
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 text-left text-sm hover:bg-modern-mint/10 border-b border-gray-100 last:border-0 flex flex-col gap-0.5"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => addPlaceFromSearch(item)}
+                    >
+                      <span className="font-medium text-foreground">{item.title}</span>
+                      {(item.roadAddress || item.address) && (
+                        <span className="text-xs text-gray-500 truncate">
+                          {item.roadAddress || item.address}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {locationValidationMessage && (
+              <p className="mt-2 text-sm text-amber-600 font-medium" role="alert">
+                {locationValidationMessage}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Select a place from the search results to add it to your list.
+            </p>
           </div>
 
           {/* AI Recommendations */}
