@@ -4,13 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:3000": "node scripts/dev-3000.js",
+    "dev:fresh": "node -e \"try{require('fs').rmSync('.next/dev/lock',{force:true})}catch(e){}\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "react": "19.2.3",
+    "react-datepicker": "^9.1.0",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
