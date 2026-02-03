@@ -1,5 +1,7 @@
 # KoGo – Seoul Travel Guide for Foreigners
 
+Precision travel guide for foreigners in Korea with detailed station exit and bus stop info.
+
 A precision travel guide service for foreign tourists visiting Korea. Built with Next.js, Tailwind CSS, and Naver Maps API.
 
 ## Features
